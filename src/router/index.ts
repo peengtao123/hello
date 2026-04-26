@@ -70,6 +70,14 @@ const router = createRouter({
             title: '系统设置'
           },
         },
+        {
+          path: 'tensorflow',
+          name: 'tensorflow',
+          component: () => import('../views/TensorFlowDemoView.vue'),
+          meta: { 
+            title: 'TensorFlow 演示'
+          },
+        },
       ]
     },
   ],
