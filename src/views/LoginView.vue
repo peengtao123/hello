@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import type { LoginParams } from '@/api/auth'
@@ -28,6 +28,9 @@ const showPassword = ref(false)
 // 滑块验证状态
 const captchaVerified = ref(false)
 const showCaptcha = ref(false)
+
+// 登录失败次数
+const loginFailCount = ref(0)
 
 // 表单验证错误
 const validationErrors = reactive({
@@ -79,9 +82,14 @@ function showCaptchaModal() {
     return
   }
   
-  // 显示滑块验证
-  showCaptcha.value = true
-  captchaVerified.value = false
+  // 如果失败次数达到3次，强制显示滑块验证
+  if (loginFailCount.value >= 3) {
+    showCaptcha.value = true
+    captchaVerified.value = false
+  } else {
+    // 未达到3次，直接提交登录
+    submitLogin()
+  }
 }
 
 /**
@@ -120,6 +128,9 @@ async function submitLogin() {
   try {
     await userStore.login(loginForm)
     
+    // 登录成功，清除失败次数
+    loginFailCount.value = 0
+    
     // 如果勾选了"记住我"，保存用户名到 localStorage
     if (loginForm.rememberMe) {
       localStorage.setItem('rememberedUsername', loginForm.username)
@@ -134,9 +145,17 @@ async function submitLogin() {
     const message = error instanceof Error ? error.message : '登录失败，请检查用户名和密码'
     errorMessage.value = message
     
-    // 登录失败，重置验证码
+    // 登录失败，增加失败次数
+    loginFailCount.value++
+    
+    // 重置验证码状态
     captchaVerified.value = false
     showCaptcha.value = false
+    
+    // 如果达到3次失败，显示提示信息
+    if (loginFailCount.value >= 3) {
+      errorMessage.value = `已连续失败${loginFailCount.value}次，请完成滑块验证后重试`
+    }
   } finally {
     loading.value = false
   }
@@ -158,10 +177,21 @@ function initLoginForm() {
     loginForm.username = rememberedUsername
     loginForm.rememberMe = true
   }
+  
+  // 恢复登录失败次数
+  const savedFailCount = localStorage.getItem('loginFailCount')
+  if (savedFailCount) {
+    loginFailCount.value = parseInt(savedFailCount, 10)
+  }
 }
 
 // 组件挂载时初始化
 initLoginForm()
+
+// 监听失败次数变化，自动保存
+watch(loginFailCount, () => {
+  saveFailCount()
+})
 
 /**
  * 切换密码可见性
@@ -169,6 +199,19 @@ initLoginForm()
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value
 }
+
+/**
+ * 保存失败次数到localStorage
+ */
+function saveFailCount() {
+  if (loginFailCount.value > 0) {
+    localStorage.setItem('loginFailCount', loginFailCount.value.toString())
+  } else {
+    localStorage.removeItem('loginFailCount')
+  }
+}
+
+watch(loginFailCount, saveFailCount)
 </script>
 
 <template>
@@ -259,6 +302,10 @@ function togglePasswordVisibility() {
         <!-- 滑块验证码 -->
         <transition name="slide-up">
           <div v-if="showCaptcha" class="captcha-section">
+            <div v-if="loginFailCount >= 3" class="captcha-warning">
+              <span class="warning-icon">🔒</span>
+              <span>已连续失败 {{ loginFailCount }} 次，请完成滑块验证</span>
+            </div>
             <SliderCaptcha 
               @success="handleCaptchaSuccess"
               @fail="handleCaptchaFail"
@@ -496,6 +543,30 @@ function togglePasswordVisibility() {
   background: #f9f9f9;
   border-radius: 8px;
   border: 2px solid #e8e8e8;
+}
+
+.captcha-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #fff7e6 0%, #fff1b8 100%);
+  color: #d46b08;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  border-left: 4px solid #faad14;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.warning-icon {
+  font-size: 16px;
 }
 
 .login-button {

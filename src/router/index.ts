@@ -35,11 +35,20 @@ const router = createRouter({
         title: '关于'
       },
     },
+    {
+      path: '/users',
+      name: 'users',
+      component: () => import('../views/UserManageView.vue'),
+      meta: { 
+        requiresAuth: true,
+        title: '用户管理'
+      },
+    },
   ],
 })
 
 // 全局前置守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const userStore = useUserStore()
   
   // 设置页面标题
@@ -49,21 +58,21 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
     if (userStore.isLoggedIn) {
       // 已登录，允许访问
-      next()
+      return true
     } else {
       // 未登录，重定向到登录页，并保存目标路径
-      next({ 
+      return { 
         name: 'login', 
         query: { redirect: to.fullPath } 
-      })
+      }
     }
   } else {
     // 如果已登录且访问登录页，重定向到首页
     if (to.name === 'login' && userStore.isLoggedIn) {
-      next({ name: 'home' })
-    } else {
-      next()
+      return { name: 'home' }
     }
+    // 其他情况，允许访问
+    return true
   }
 })
 

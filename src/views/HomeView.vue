@@ -49,6 +49,11 @@ async function handleLogout() {
 function switchMenu(menuId: string) {
   if (activeMenu.value !== menuId) {
     activeMenu.value = menuId
+    
+    // 如果点击的是用户管理，跳转到用户管理页面
+    if (menuId === 'users') {
+      router.push('/users')
+    }
   }
 }
 
