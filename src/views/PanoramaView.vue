@@ -90,7 +90,8 @@ const scenes: PanoramaScene[] = [
     id: 'living-room',
     name: '客厅',
     description: '宽敞明亮的现代客厅，落地窗设计，采光极佳',
-    imageUrl: 'https://cdn.pixabay.com/photo/2017/08/06/22/01/people-2594502_1280.jpg', // 示例图片
+    // 使用 Unsplash 的免费图片（无防盗链）
+    imageUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1920&q=80',
     hotspots: [
       {
         position: new THREE.Vector3(5, 0, 0),
@@ -108,7 +109,7 @@ const scenes: PanoramaScene[] = [
     id: 'bedroom',
     name: '卧室',
     description: '温馨舒适的卧室，配备现代化家具',
-    imageUrl: 'https://cdn.pixabay.com/photo/2016/11/29/05/45/astronomy-1867616_1280.jpg', // 示例图片
+    imageUrl: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=1920&q=80',
     hotspots: [
       {
         position: new THREE.Vector3(0, 0, -5),
@@ -121,7 +122,7 @@ const scenes: PanoramaScene[] = [
     id: 'kitchen',
     name: '厨房',
     description: '开放式现代化厨房，设备齐全',
-    imageUrl: 'https://cdn.pixabay.com/photo/2018/06/14/02/31/house-3475025_1280.jpg', // 示例图片
+    imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1920&q=80',
     hotspots: [
       {
         position: new THREE.Vector3(0, 0, 5),
@@ -174,10 +175,32 @@ function init() {
   controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.05
-  controls.enableZoom = true
+  
+  // 启用所有交互功能
+  controls.enableZoom = true           // 启用滚轮缩放
+  controls.enableRotate = true         // 启用左键旋转
+  controls.enablePan = true            // 启用右键平移
+  
+  // 设置合适的距离限制
   controls.minDistance = 0.1
-  controls.maxDistance = 100
-  controls.enablePan = false // 禁用平移，保持在全景内部
+  controls.maxDistance = 50
+  controls.minPolarAngle = 0           // 允许查看正上方
+  controls.maxPolarAngle = Math.PI     // 允许查看正下方
+  
+  // 平滑控制
+  controls.rotateSpeed = 0.5
+  controls.zoomSpeed = 0.8
+  controls.panSpeed = 0.8
+  
+  console.log('OrbitControls 已初始化', {
+    enableZoom: controls.enableZoom,
+    enableRotate: controls.enableRotate,
+    enablePan: controls.enablePan
+  })
+
+  // 添加 pointerdown 事件监听器（用于热点交互）
+  // 注意：使用 pointerdown 而不是 click，避免与 OrbitControls 冲突
+  canvasRef.value.addEventListener('pointerdown', handleCanvasClick)
 
   // 监听窗口大小变化
   window.addEventListener('resize', handleResize)
@@ -194,14 +217,18 @@ async function loadPanorama(imageUrl: string) {
       ;(sphere.material as THREE.Material).dispose()
     }
 
-    // 加载纹理
+    // 加载纹理（设置跨域支持）
     const textureLoader = new THREE.TextureLoader()
     const texture = await new Promise<THREE.Texture>((resolve, reject) => {
+      textureLoader.crossOrigin = 'anonymous'
       textureLoader.load(
         imageUrl,
         resolve,
         undefined,
-        reject
+        (error) => {
+          console.error('图片加载失败:', error)
+          reject(error)
+        }
       )
     })
 
@@ -228,8 +255,65 @@ async function loadPanorama(imageUrl: string) {
   } catch (error) {
     console.error('加载全景图失败:', error)
     loading.value = false
-    alert('加载全景图失败，请检查网络连接或图片地址')
+    
+    // 降级方案：使用渐变色背景
+    createFallbackBackground()
   }
+}
+
+// 降级方案：创建渐变色背景
+function createFallbackBackground() {
+  const geometry = new THREE.SphereGeometry(500, 60, 40)
+  geometry.scale(-1, 1, 1)
+  
+  // 创建渐变画布作为纹理
+  const canvas = document.createElement('canvas')
+  canvas.width = 2048
+  canvas.height = 1024
+  const ctx = canvas.getContext('2d')
+  
+  if (ctx) {
+    // 根据场景ID创建不同的渐变
+    const gradients: Record<string, [string, string]> = {
+      'living-room': ['#ff9a9e', '#fecfef'],
+      'bedroom': ['#a18cd1', '#fbc2eb'],
+      'kitchen': ['#fad0c4', '#ffd1ff']
+    }
+    
+    const colors = gradients[currentSceneId.value] || ['#667eea', '#764ba2']
+    
+    // 创建渐变
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+    gradient.addColorStop(0, colors[0])
+    gradient.addColorStop(1, colors[1])
+    
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    
+    // 添加文字提示
+    ctx.fillStyle = 'white'
+    ctx.font = 'bold 48px Arial'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('全景图加载中...', canvas.width / 2, canvas.height / 2 - 30)
+    ctx.font = '24px Arial'
+    ctx.fillText('请检查网络连接', canvas.width / 2, canvas.height / 2 + 30)
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas)
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.FrontSide
+  })
+  
+  sphere = new THREE.Mesh(geometry, material)
+  scene.add(sphere)
+  
+  // 添加热点标记
+  addHotspots()
+  
+  // 显示警告提示
+  alert(`⚠️ 全景图加载失败\n\n可能原因：\n1. 网络连接问题\n2. 图片资源不可用\n\n已切换至演示模式（渐变色背景）`)
 }
 
 function addHotspots() {
@@ -237,12 +321,12 @@ function addHotspots() {
   if (!currentSceneData || !currentSceneData.hotspots) return
 
   currentSceneData.hotspots.forEach(hotspot => {
-    // 创建热点标记（红色小球）
-    const hotspotGeometry = new THREE.SphereGeometry(2, 16, 16)
+    // 创建热点标记（适中的红色小球）
+    const hotspotGeometry = new THREE.SphereGeometry(1.5, 32, 32)
     const hotspotMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
+      color: 0xff3333,  // 更亮的红色
       transparent: true,
-      opacity: 0.8
+      opacity: 0.9      // 更高的不透明度
     })
     const hotspotMesh = new THREE.Mesh(hotspotGeometry, hotspotMaterial)
     hotspotMesh.position.copy(hotspot.position)
@@ -251,6 +335,17 @@ function addHotspots() {
       targetSceneId: hotspot.targetSceneId,
       label: hotspot.label
     }
+    
+    // 添加外发光效果（稍大的半透明球体）
+    const glowGeometry = new THREE.SphereGeometry(2.2, 32, 32)
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff6666,
+      transparent: true,
+      opacity: 0.25
+    })
+    const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial)
+    hotspotMesh.add(glowMesh) // 作为子对象添加到主热点
+    
     scene.add(hotspotMesh)
 
     // 添加脉冲动画效果
@@ -284,6 +379,37 @@ function switchScene(sceneId: string) {
   }
 }
 
+// 处理画布点击事件（射线检测）
+function handleCanvasClick(event: PointerEvent) {
+  if (!canvasRef.value || !camera || !scene) return
+
+  // 计算鼠标位置的标准化设备坐标 (-1 到 +1)
+  const rect = canvasRef.value.getBoundingClientRect()
+  const mouse = new THREE.Vector2(
+    ((event.clientX - rect.left) / rect.width) * 2 - 1,
+    -((event.clientY - rect.top) / rect.height) * 2 + 1
+  )
+
+  // 创建射线
+  const raycaster = new THREE.Raycaster()
+  raycaster.setFromCamera(mouse, camera)
+
+  // 检测与场景中所有对象的交叉点
+  const intersects = raycaster.intersectObjects(scene.children, true)
+
+  // 查找第一个热点标记
+  for (const intersect of intersects) {
+    const object = intersect.object
+    if (object.userData && object.userData.type === 'hotspot') {
+      // 找到热点，切换到目标场景
+      const targetSceneId = object.userData.targetSceneId
+      console.log('点击热点，跳转到:', targetSceneId)
+      switchScene(targetSceneId)
+      break
+    }
+  }
+}
+
 function toggleAutoRotate() {
   autoRotate.value = !autoRotate.value
   if (controls) {
@@ -314,6 +440,11 @@ function handleResize() {
 function cleanup() {
   cancelAnimationFrame(animationId)
   window.removeEventListener('resize', handleResize)
+  
+  // 移除点击事件监听器
+  if (canvasRef.value) {
+    canvasRef.value.removeEventListener('pointerdown', handleCanvasClick)
+  }
   
   // 清理 Three.js 资源
   if (renderer) {
