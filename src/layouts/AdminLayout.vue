@@ -52,6 +52,7 @@ const menus: MenuItem[] = [
     icon: '🎓',
     children: [
       { id: 'three-showcase', name: '3D 可视化', icon: '🎨', path: '/three-showcase', description: 'Three.js 3D 功能展示' },
+      { id: 'panorama', name: '全景看房', icon: '🏠', path: '/panorama', description: '360° VR全景看房演示' },
       { id: 'tensorflow', name: '深度学习', icon: '🧠', path: '/tensorflow', description: 'TensorFlow.js 演示与应用' },
     ]
   },

@@ -103,6 +103,14 @@ const router = createRouter({
           },
         },
         {
+          path: 'panorama',
+          name: 'panorama',
+          component: () => import('../views/PanoramaView.vue'),
+          meta: { 
+            title: '全景看房'
+          },
+        },
+        {
           path: 'articles',
           name: 'articles',
           component: () => import('../views/ArticleManageView.vue'),
