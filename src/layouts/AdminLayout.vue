@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { RouterView } from 'vue-router'
 import { useUserStore } from '@/stores/user'
@@ -8,28 +8,115 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-// 菜单列表 - 使用常量定义，避免响应式开销
-const menus = [
-  { id: 'dashboard', name: '仪表盘', icon: '📊', path: '/', description: '查看系统概览和关键指标' },
-  { id: 'users', name: '用户管理', icon: '👥', path: '/users', description: '管理系统用户信息' },
-  { id: 'products', name: '商品管理', icon: '📦', path: '/products', description: '管理商品信息' },
-  { id: 'orders', name: '订单管理', icon: '📝', path: '/orders', description: '查看和管理订单' },
-  { id: 'settings', name: '系统设置', icon: '⚙️', path: '/settings', description: '配置系统参数' },
+// 定义菜单项类型
+interface MenuItem {
+  id: string
+  name: string
+  icon: string
+  path?: string
+  description?: string
+  children?: MenuItem[]
+}
+
+// 菜单列表 - 支持两级菜单结构
+const menus: MenuItem[] = [
+  { 
+    id: 'dashboard', 
+    name: '仪表盘', 
+    icon: '📊', 
+    path: '/', 
+    description: '查看系统概览和关键指标' 
+  },
+  { 
+    id: 'user-center',
+    name: '用户中心',
+    icon: '👥',
+    children: [
+      { id: 'users', name: '用户管理', icon: '👤', path: '/users', description: '管理系统用户信息' },
+      { id: 'roles', name: '角色管理', icon: '🔐', path: '/roles', description: '管理用户角色权限' },
+    ]
+  },
+  { 
+    id: 'business',
+    name: '业务管理',
+    icon: '💼',
+    children: [
+      { id: 'products', name: '商品管理', icon: '📦', path: '/products', description: '管理商品信息' },
+      { id: 'orders', name: '订单管理', icon: '📝', path: '/orders', description: '查看和管理订单' },
+      { id: 'articles', name: '文章管理', icon: '📰', path: '/articles', description: '展示第三方API文章数据' },
+    ]
+  },
+  { 
+    id: 'tech-learning',
+    name: '技术学习',
+    icon: '🎓',
+    children: [
+      { id: 'three-showcase', name: '3D 可视化', icon: '🎨', path: '/three-showcase', description: 'Three.js 3D 功能展示' },
+      { id: 'tensorflow', name: '深度学习', icon: '🧠', path: '/tensorflow', description: 'TensorFlow.js 演示与应用' },
+    ]
+  },
+  { 
+    id: 'settings', 
+    name: '系统设置', 
+    icon: '⚙️', 
+    path: '/settings', 
+    description: '配置系统参数' 
+  },
 ]
+
+// 展开的菜单项集合
+const expandedMenus = ref<Set<string>>(new Set())
 
 // 计算当前激活的菜单项
 const activeMenu = computed(() => {
   const currentPath = route.path
-  const menu = menus.find(m => m.path === currentPath)
-  return menu?.id || 'dashboard'
+  
+  // 先查找一级菜单
+  for (const menu of menus) {
+    if (menu.path === currentPath) {
+      return menu.id
+    }
+    // 再查找二级菜单
+    if (menu.children) {
+      const child = menu.children.find(c => c.path === currentPath)
+      if (child) {
+        return child.id
+      }
+    }
+  }
+  
+  return 'dashboard'
 })
 
 // 计算当前面包屑
 const breadcrumb = computed(() => {
   const currentPath = route.path
-  const menu = menus.find(m => m.path === currentPath)
-  return menu?.name || '页面'
+  
+  for (const menu of menus) {
+    if (menu.path === currentPath) {
+      return menu.name
+    }
+    if (menu.children) {
+      const child = menu.children.find(c => c.path === currentPath)
+      if (child) {
+        return `${menu.name} / ${child.name}`
+      }
+    }
+  }
+  
+  return '页面'
 })
+
+/**
+ * 切换菜单展开/收起状态
+ */
+function toggleExpand(menuId: string) {
+  if (expandedMenus.value.has(menuId)) {
+    expandedMenus.value.delete(menuId)
+  } else {
+    expandedMenus.value.add(menuId)
+  }
+}
 
 /**
  * 切换菜单
@@ -66,15 +153,44 @@ async function handleLogout() {
           <li
             v-for="menu in menus"
             :key="menu.id"
-            class="menu-item"
-            :class="{ active: activeMenu === menu.id }"
-            @click="switchMenu(menu.path)"
+            class="menu-item-wrapper"
           >
-            <span class="menu-icon">{{ menu.icon }}</span>
-            <div class="menu-info">
-              <span class="menu-name">{{ menu.name }}</span>
-              <span class="menu-desc">{{ menu.description || '' }}</span>
+            <!-- 一级菜单 -->
+            <div
+              class="menu-item"
+              :class="{ 
+                active: activeMenu === menu.id,
+                'has-children': menu.children,
+                expanded: menu.children && expandedMenus.has(menu.id)
+              }"
+              @click="menu.children ? toggleExpand(menu.id) : switchMenu(menu.path!)"
+            >
+              <span class="menu-icon">{{ menu.icon }}</span>
+              <div class="menu-info">
+                <span class="menu-name">{{ menu.name }}</span>
+                <span v-if="menu.description && !menu.children" class="menu-desc">{{ menu.description }}</span>
+              </div>
+              <span v-if="menu.children" class="expand-icon">
+                {{ expandedMenus.has(menu.id) ? '▼' : '▶' }}
+              </span>
             </div>
+            
+            <!-- 二级菜单 -->
+            <ul v-if="menu.children && expandedMenus.has(menu.id)" class="submenu-list">
+              <li
+                v-for="child in menu.children"
+                :key="child.id"
+                class="submenu-item"
+                :class="{ active: activeMenu === child.id }"
+                @click="switchMenu(child.path!)"
+              >
+                <span class="submenu-icon">{{ child.icon }}</span>
+                <div class="submenu-info">
+                  <span class="submenu-name">{{ child.name }}</span>
+                  <span v-if="child.description" class="submenu-desc">{{ child.description }}</span>
+                </div>
+              </li>
+            </ul>
           </li>
         </ul>
       </nav>
@@ -155,6 +271,10 @@ async function handleLogout() {
   margin: 0;
 }
 
+.menu-item-wrapper {
+  margin: 4px 0;
+}
+
 .menu-item {
   display: flex;
   align-items: center;
@@ -163,7 +283,7 @@ async function handleLogout() {
   cursor: pointer;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
-  margin: 4px 0;
+  position: relative;
 }
 
 .menu-item:hover {
@@ -174,6 +294,14 @@ async function handleLogout() {
 .menu-item.active {
   background: rgba(255, 255, 255, 0.2);
   border-left-color: white;
+}
+
+.menu-item.has-children {
+  cursor: pointer;
+}
+
+.menu-item.expanded {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .menu-icon {
@@ -196,6 +324,63 @@ async function handleLogout() {
 .menu-desc {
   font-size: 12px;
   opacity: 0.7;
+}
+
+.expand-icon {
+  font-size: 10px;
+  opacity: 0.7;
+  transition: transform 0.3s ease;
+}
+
+/* 二级菜单样式 */
+.submenu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.submenu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px 10px 54px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.submenu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+.submenu-item.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-left-color: white;
+}
+
+.submenu-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.submenu-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.submenu-name {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.submenu-desc {
+  font-size: 11px;
+  opacity: 0.6;
 }
 
 .sidebar-footer {
@@ -289,7 +474,8 @@ async function handleLogout() {
     width: 200px;
   }
   
-  .menu-desc {
+  .menu-desc,
+  .submenu-desc {
     display: none;
   }
   

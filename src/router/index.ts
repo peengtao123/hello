@@ -78,6 +78,30 @@ const router = createRouter({
             title: 'TensorFlow 演示'
           },
         },
+        {
+          path: 'three-demo',
+          name: 'three-demo',
+          component: () => import('../views/ThreeDemoView.vue'),
+          meta: { 
+            title: 'Three.js 3D 演示'
+          },
+        },
+        {
+          path: 'three-showcase',
+          name: 'three-showcase',
+          component: () => import('../views/ThreeShowcaseView.vue'),
+          meta: { 
+            title: '3D 功能展示'
+          },
+        },
+        {
+          path: 'articles',
+          name: 'articles',
+          component: () => import('../views/ArticleManageView.vue'),
+          meta: { 
+            title: '文章管理'
+          },
+        },
       ]
     },
   ],
