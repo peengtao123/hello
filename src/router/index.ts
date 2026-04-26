@@ -87,6 +87,14 @@ const router = createRouter({
           },
         },
         {
+          path: 'particle-demo',
+          name: 'particle-demo',
+          component: () => import('../views/ParticleDemoView.vue'),
+          meta: { 
+            title: '粒子系统演示'
+          },
+        },
+        {
           path: 'three-showcase',
           name: 'three-showcase',
           component: () => import('../views/ThreeShowcaseView.vue'),

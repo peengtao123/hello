@@ -90,8 +90,7 @@ function goToDemo(type: string) {
   if (type === 'basic') {
     router.push('/three-demo')
   } else if (type === 'particles') {
-    // 可以在这里添加粒子系统的独立路由
-    router.push('/three-demo')
+    router.push('/particle-demo')
   }
 }
 </script>
