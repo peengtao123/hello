@@ -1,4 +1,4 @@
-import request from './request'
+import { mockLogin, mockGetUserInfo, mockLogout } from './mock'
 
 // 登录请求参数类型
 export interface LoginParams {
@@ -29,34 +29,16 @@ export interface UserInfo {
   avatar?: string
 }
 
-/**
- * 用户登录
- * @param params 登录参数
- */
 export function login(params: LoginParams): Promise<LoginResponse> {
-  return request({
-    url: '/auth/login',
-    method: 'post',
-    data: params,
-  })
+  // 使用 Mock API
+  return mockLogin(params.username, params.password) as Promise<LoginResponse>
 }
 
-/**
- * 获取用户信息
- */
 export function getUserInfo(): Promise<{ code: number; data: UserInfo }> {
-  return request({
-    url: '/auth/userinfo',
-    method: 'get',
-  })
+  const token = localStorage.getItem('token') || ''
+  return mockGetUserInfo(token) as Promise<{ code: number; data: UserInfo }>
 }
 
-/**
- * 用户登出
- */
 export function logout(): Promise<{ code: number }> {
-  return request({
-    url: '/auth/logout',
-    method: 'post',
-  })
+  return mockLogout() as Promise<{ code: number }>
 }
