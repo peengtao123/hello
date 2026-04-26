@@ -6,6 +6,15 @@
 - [2. 技术架构](#2-技术架构)
 - [3. 核心功能模块](#3-核心功能模块)
 - [4. 主题系统详解](#4-主题系统详解)
+  - [4.1 系统架构](#41-系统架构)
+  - [4.2 8种预设主题](#42-8种预设主题)
+  - [4.3 核心功能](#43-核心功能)
+  - [4.4 CSS 变量系统](#44-css-变量系统)
+  - [4.5 技术实现亮点 ⭐](#45-技术实现亮点-)
+    - [模块化设计](#451-模块化设计)
+    - [Canvas 预览图生成](#452-canvas-预览图生成)
+    - [智能定时器管理](#453-智能定时器管理)
+    - [文件导入处理](#454-文件导入处理)
 - [5. 登录与安全机制](#5-登录与安全机制)
 - [6. 布局与路由设计](#6-布局与路由设计)
 - [7. 状态管理](#7-状态管理)
@@ -134,7 +143,7 @@ hello/
 
 #### 3.1.1 登录流程
 
-```typescript
+``typescript
 // 1. 表单验证
 用户名 ≥ 3 字符
 密码 ≥ 6 字符
@@ -163,7 +172,7 @@ POST /api/login
 
 #### 3.1.2 Token 管理
 
-```typescript
+``typescript
 // Token 存储
 localStorage.setItem('token', token)
 
@@ -177,7 +186,7 @@ router.push('/login')
 
 #### 3.1.3 路由守卫
 
-```typescript
+``typescript
 // 全局前置守卫
 router.beforeEach((to) => {
   // 需要认证的页面
@@ -210,7 +219,7 @@ router.beforeEach((to) => {
 
 #### 3.2.2 z-index 层级管理
 
-```css
+```
 拼图碎片: z-index: 10     /* 最高层级，可拖动 */
 提示文字: z-index: 5      /* 在碎片上方 */
 缺口目标: z-index: 3      /* 底层，显示位置 */
@@ -219,7 +228,7 @@ router.beforeEach((to) => {
 
 #### 3.2.3 使用示例
 
-```vue
+``vue
 <template>
   <SliderCaptcha
     @success="handleCaptchaSuccess"
@@ -252,7 +261,7 @@ const handleCaptchaFail = () => {
 
 #### 3.3.2 实现细节
 
-```typescript
+``typescript
 // 状态管理
 const loginFailCount = ref(0)
 
@@ -325,7 +334,7 @@ const handleLoginSuccess = () => {
 
 #### 4.3.1 主题导入/导出
 
-```typescript
+``typescript
 // 导出主题
 const json = themeStore.exportTheme()
 // 输出格式：
@@ -345,7 +354,7 @@ const success = themeStore.importTheme(jsonString)
 
 #### 4.3.2 主题预览图生成
 
-```typescript
+``typescript
 // 使用 Canvas API 生成 PNG 图片
 const base64 = await themeStore.generateThemePreview()
 
@@ -357,7 +366,7 @@ const base64 = await themeStore.generateThemePreview()
 
 #### 4.3.3 用户级别偏好
 
-```typescript
+``typescript
 // 为不同用户设置独立主题
 themeStore.setUserId('admin')     // 管理员主题
 themeStore.setUserId('user001')   // 用户001主题
@@ -369,7 +378,7 @@ themeStore.setUserId('user001')   // 用户001主题
 
 #### 4.3.4 自动切换主题
 
-```typescript
+``typescript
 // 启用自动切换
 themeStore.toggleAutoSwitch(true)
 
@@ -388,7 +397,7 @@ themeStore.setAutoSwitchSchedule(
 
 ### 4.4 CSS 变量系统
 
-```css
+```
 :root {
   --primary-color: #667eea;      /* 主色调 */
   --secondary-color: #764ba2;    /* 次要颜色 */
@@ -407,6 +416,217 @@ themeStore.setAutoSwitchSchedule(
   border: 1px solid var(--border-color);
 }
 ```
+
+### 4.5 技术实现亮点 ⭐
+
+#### 4.5.1 模块化设计
+
+主题 Store 采用清晰的职责分离，每个函数专注于单一功能：
+
+```
+// src/stores/theme.ts
+
+// 核心功能模块
+- applyTheme()       // 应用主题到 DOM（更新 CSS 变量和 class）
+- exportTheme()      // 导出配置为 JSON 格式
+- importTheme()      // 从 JSON 导入并应用配置
+- generatePreview()  // 使用 Canvas 生成预览图
+- setUserId()        // 设置用户ID，支持用户级偏好
+- toggleAutoSwitch() // 切换自动切换功能
+- setAutoSwitchSchedule() // 设置自动切换时间表
+- checkAndSwitchTheme()   // 检查时间并执行切换
+```
+
+**优势**：
+- ✅ **高内聚低耦合**：每个函数职责明确，易于测试和维护
+- ✅ **可复用性强**：各功能模块可独立调用
+- ✅ **易于扩展**：新增功能不影响现有代码
+
+#### 4.5.2 Canvas 预览图生成
+
+使用原生 Canvas API 动态生成主题预览图片，无需后端支持：
+
+```
+async function generateThemePreview(): Promise<string> {
+  return new Promise((resolve) => {
+    // 1. 创建 Canvas 元素
+    const canvas = document.createElement('canvas')
+    canvas.width = 400
+    canvas.height = 300
+    const ctx = canvas.getContext('2d')
+    
+    if (!ctx) {
+      resolve('')
+      return
+    }
+    
+    // 2. 绘制渐变背景（主色调 → 次要色）
+    const gradient = ctx.createLinearGradient(0, 0, 400, 300)
+    gradient.addColorStop(0, primaryColor.value)
+    gradient.addColorStop(1, secondaryColor.value)
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, 400, 300)
+    
+    // 3. 添加主题信息文字
+    ctx.fillStyle = 'white'
+    ctx.font = 'bold 24px Arial'
+    ctx.textAlign = 'center'
+    ctx.fillText('主题预览', 200, 80)
+    
+    ctx.font = '16px Arial'
+    ctx.fillText(`主色调: ${primaryColor.value}`, 200, 130)
+    ctx.fillText(`次要色: ${secondaryColor.value}`, 200, 160)
+    ctx.fillText(`模式: ${themeMode.value === 'light' ? '亮色' : '暗色'}`, 200, 190)
+    
+    // 4. 绘制颜色示例色块
+    ctx.fillStyle = primaryColor.value
+    ctx.fillRect(100, 220, 80, 40)
+    ctx.fillStyle = secondaryColor.value
+    ctx.fillRect(220, 220, 80, 40)
+    
+    // 5. 导出为 base64 PNG 格式
+    resolve(canvas.toDataURL('image/png'))
+  })
+}
+```
+
+**技术要点**：
+- 🎨 **渐变背景**：使用 `createLinearGradient` 创建平滑过渡
+- 📝 **文字渲染**：支持字体、大小、对齐方式自定义
+- 🔲 **图形绘制**：使用 `fillRect` 绘制色块示例
+- 💾 **格式转换**：`toDataURL()` 直接生成 base64 编码的 PNG
+
+**应用场景**：
+- 主题分享时附带预览图
+- 主题市场展示缩略图
+- 用户收藏主题的视觉标识
+
+#### 4.5.3 智能定时器管理
+
+使用 Vue 3 的 `onScopeDispose` 钩子实现定时器的自动清理，防止内存泄漏：
+
+```
+import { onScopeDispose } from 'vue'
+
+let autoSwitchTimer: number | null = null
+
+/**
+ * 启动自动切换定时器
+ */
+function startAutoSwitch() {
+  // 清除旧的定时器（防止重复创建）
+  if (autoSwitchTimer) {
+    clearInterval(autoSwitchTimer)
+  }
+  
+  // 每分钟检查一次当前时间
+  autoSwitchTimer = window.setInterval(() => {
+    checkAndSwitchTheme()
+  }, 60000)
+  
+  // 立即检查一次（避免等待一分钟）
+  checkAndSwitchTheme()
+}
+
+/**
+ * 停止自动切换
+ */
+function stopAutoSwitch() {
+  if (autoSwitchTimer) {
+    clearInterval(autoSwitchTimer)
+    autoSwitchTimer = null
+  }
+}
+
+// 组件卸载或作用域结束时自动清理
+onScopeDispose(() => {
+  stopAutoSwitch()
+})
+```
+
+**最佳实践**：
+- ✅ **防重复创建**：启动前先清除旧定时器
+- ✅ **立即执行**：首次启动时立即检查，提升用户体验
+- ✅ **自动清理**：组件卸载时自动停止定时器
+- ✅ **状态管理**：使用 `null` 标记定时器已清理
+
+**内存泄漏风险**：
+如果不使用 `onScopeDispose` 清理定时器，即使用户离开页面，定时器仍会在后台运行，导致：
+- ❌ 持续的 CPU 占用
+- ❌ 无效的 DOM 操作
+- ❌ 潜在的内存泄漏
+
+#### 4.5.4 文件导入处理
+
+使用 `FileReader` API 异步读取用户上传的 JSON 配置文件：
+
+```
+/**
+ * 导入主题配置
+ */
+function handleImportTheme(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file) return
+  
+  // 1. 创建 FileReader 实例
+  const reader = new FileReader()
+  
+  // 2. 定义加载完成回调
+  reader.onload = (e) => {
+    const content = e.target?.result as string
+    
+    // 3. 调用 Store 方法导入配置
+    const success = themeStore.importTheme(content)
+    
+    if (success) {
+      alert('主题配置导入成功！')
+    } else {
+      alert('导入失败，请检查文件格式')
+    }
+  }
+  
+  // 4. 错误处理
+  reader.onerror = () => {
+    console.error('文件读取失败')
+    alert('文件读取失败，请重试')
+  }
+  
+  // 5. 以文本格式读取文件
+  reader.readAsText(file)
+  
+  // 6. 清空 input，允许重复导入同一文件
+  target.value = ''
+}
+```
+
+**HTML 模板**：
+```
+<label class="btn btn-secondary import-btn">
+  <span class="btn-icon">📥</span>
+  导入主题
+  <input 
+    type="file" 
+    accept=".json" 
+    @change="handleImportTheme"
+    style="display: none"
+  />
+</label>
+```
+
+**技术要点**：
+- 📂 **文件选择**：使用隐藏的 `<input type="file">` + `<label>` 触发
+- 🔍 **类型限制**：`accept=".json"` 只允许 JSON 文件
+- 🔄 **异步读取**：`FileReader` 非阻塞，不冻结 UI
+- ✅ **错误处理**：`onerror` 捕获读取异常
+- ♻️ **可重复使用**：清空 `value` 允许再次选择同一文件
+
+**安全性考虑**：
+- ✅ 前端验证文件格式（`.json`）
+- ✅ 解析前进行 JSON 格式校验
+- ✅ 捕获解析异常，防止恶意文件
+- ⚠️ 建议后端也进行二次验证
 
 ---
 
@@ -433,7 +653,7 @@ themeStore.setAutoSwitchSchedule(
 
 ### 5.2 会话管理
 
-```typescript
+```
 // 会话超时配置
 const sessionTimeout = 30 // 分钟
 
@@ -466,7 +686,7 @@ setInterval(() => {
 
 #### 6.1.2 组件结构
 
-```vue
+```
 <!-- AdminLayout.vue -->
 <template>
   <div class="admin-layout">
@@ -513,7 +733,7 @@ setInterval(() => {
 
 ### 6.2 嵌套路由配置
 
-```typescript
+```
 // router/index.ts
 const routes = [
   {
@@ -539,7 +759,7 @@ const routes = [
 
 ### 6.3 Keep-alive 页面缓存
 
-```vue
+```
 <RouterView v-slot="{ Component }">
   <keep-alive>
     <component :is="Component" :key="route.fullPath" />
@@ -561,7 +781,7 @@ const routes = [
 
 #### 7.1.1 用户状态 (UserStore)
 
-```typescript
+```
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
@@ -617,7 +837,7 @@ export const useUserStore = defineStore('user', () => {
 
 ### 7.2 状态持久化
 
-```typescript
+```
 // 自动保存到 localStorage
 watch(token, (newToken) => {
   if (newToken) {
@@ -642,7 +862,7 @@ onMounted(() => {
 
 ### 8.1 Axios 封装
 
-```typescript
+```
 // api/auth.ts
 import axios from 'axios'
 
@@ -681,7 +901,7 @@ export default apiClient
 
 ### 8.2 API 接口定义
 
-```typescript
+```
 // 登录接口
 export async function login(username: string, password: string) {
   return apiClient.post('/login', { username, password })
@@ -700,7 +920,7 @@ export async function logout() {
 
 ### 8.3 Mock 数据
 
-```typescript
+```
 // api/mock.ts
 const mockUsers = [
   { username: 'admin', password: '123456', role: 'admin' },
@@ -735,7 +955,7 @@ export function mockLogin(username: string, password: string) {
 
 ### 9.1 代码分割
 
-```typescript
+```
 // 路由懒加载
 const routes = [
   {
@@ -752,7 +972,7 @@ const routes = [
 
 ### 9.2 组件缓存
 
-```vue
+```
 <keep-alive>
   <component :is="Component" />
 </keep-alive>
@@ -765,7 +985,7 @@ const routes = [
 
 ### 9.3 防抖与节流
 
-```typescript
+```
 // 防抖：搜索输入
 import { debounce } from 'lodash-es'
 
@@ -783,7 +1003,7 @@ const scrollHandler = throttle(() => {
 
 ### 9.4 图片优化
 
-```vue
+```
 <!-- 懒加载 -->
 <img v-lazy="imageUrl" alt="图片" />
 
@@ -802,7 +1022,7 @@ const scrollHandler = throttle(() => {
 
 #### 10.1.1 命名规范
 
-```typescript
+```
 // 变量：小驼峰
 const userName = 'admin'
 const isLoading = false
@@ -832,7 +1052,7 @@ type TResponse<T = unknown> = {
 
 #### 10.1.2 注释规范
 
-```typescript
+```
 /**
  * 获取用户列表
  * @param page - 页码
@@ -850,7 +1070,7 @@ async function getUserList(page: number, pageSize: number): Promise<IUser[]> {
 
 #### 10.2.1 避免使用 any
 
-```typescript
+```
 // ❌ 错误
 const data: any = fetchData()
 
@@ -866,7 +1086,7 @@ interface ApiResponse<T = unknown> {
 
 #### 10.2.2 严格空值检查
 
-```typescript
+```
 // ❌ 可能为 undefined
 const value = obj.prop
 
@@ -884,7 +1104,7 @@ const value = obj?.prop ?? 'default'
 
 #### 10.3.1 组合式 API
 
-```vue
+```
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 
@@ -908,7 +1128,7 @@ onMounted(() => {
 
 #### 10.3.2 Props 定义
 
-```typescript
+```
 interface Props {
   title: string
   count?: number
@@ -922,7 +1142,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 #### 10.3.3 Emits 定义
 
-```typescript
+```
 const emit = defineEmits<{
   update: [value: string]
   delete: [id: number]
@@ -937,7 +1157,7 @@ emit('delete', 123)
 
 #### 10.4.1 单元测试
 
-```typescript
+```
 // tests/unit/user.test.ts
 import { describe, it, expect } from 'vitest'
 import { useUserStore } from '@/stores/user'
@@ -959,7 +1179,7 @@ describe('UserStore', () => {
 
 #### 10.4.2 E2E 测试
 
-```typescript
+```
 // tests/e2e/login.spec.ts
 import { test, expect } from '@playwright/test'
 
@@ -990,7 +1210,7 @@ test('用户应该能成功登录', async ({ page }) => {
 
 ### 11.2 本地开发
 
-```bash
+```
 # 安装依赖
 npm install
 
@@ -1003,7 +1223,7 @@ http://localhost:5173
 
 ### 11.3 生产构建
 
-```bash
+```
 # 类型检查
 npm run type-check
 
@@ -1027,7 +1247,7 @@ dist/
 
 ### 11.4 Nginx 配置
 
-```nginx
+```
 server {
     listen 80;
     server_name your-domain.com;
@@ -1060,7 +1280,7 @@ server {
 
 ### 11.5 Docker 部署
 
-```dockerfile
+```
 # Dockerfile
 FROM node:20-alpine AS builder
 
@@ -1089,7 +1309,7 @@ docker run -d -p 80:80 hello-app
 
 ### 11.6 CI/CD 配置
 
-```yaml
+```
 # .github/workflows/deploy.yml
 name: Deploy
 
