@@ -125,6 +125,9 @@ describe('用户 Store', () => {
 
   describe('获取用户信息', () => {
     it('应该成功获取用户信息', async () => {
+      // 先设置 token
+      userStore.token = 'test-token'
+      
       const mockUserInfo = {
         id: 1,
         username: 'admin',
@@ -133,6 +136,7 @@ describe('用户 Store', () => {
 
       vi.mocked(authApi.getUserInfo).mockResolvedValue({
         code: 200,
+        message: 'success',
         data: mockUserInfo,
       })
 
@@ -140,6 +144,13 @@ describe('用户 Store', () => {
 
       expect(userStore.userInfo).toEqual(mockUserInfo)
       expect(authApi.getUserInfo).toHaveBeenCalled()
+    })
+    
+    it('应该在未登录时抛出错误', async () => {
+      // 确保未登录
+      userStore.token = ''
+      
+      await expect(userStore.fetchUserInfo()).rejects.toThrow('未登录')
     })
   })
 })

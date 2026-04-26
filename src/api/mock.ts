@@ -21,6 +21,13 @@ const users = [
     email: 'user@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user',
   },
+  {
+    id: 3,
+    username: 'test',
+    password: 'test123',
+    email: 'test@example.com',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=test',
+  },
 ]
 
 // 模拟 Token 生成（实际项目应使用 JWT）
@@ -40,6 +47,11 @@ function delay(ms: number = 500): Promise<void> {
 export async function mockLogin(username: string, password: string) {
   await delay(800) // 模拟网络延迟
 
+  // 参数验证
+  if (!username || !password) {
+    throw new Error('用户名和密码不能为空')
+  }
+
   const user = users.find((u) => u.username === username && u.password === password)
 
   if (!user) {
@@ -50,7 +62,7 @@ export async function mockLogin(username: string, password: string) {
 
   return {
     code: 200,
-    message: 'success',
+    message: '登录成功',
     data: {
       token,
       userInfo: {
@@ -72,7 +84,7 @@ export async function mockGetUserInfo(token: string) {
 
   // 简单验证 token（实际项目应验证 JWT）
   if (!token) {
-    throw new Error('未授权')
+    throw new Error('未授权，请先登录')
   }
 
   try {
@@ -81,11 +93,12 @@ export async function mockGetUserInfo(token: string) {
     const user = users.find((u) => u.id === Number(userId))
 
     if (!user) {
-      throw new Error('用户不存在')
+      throw new Error('用户不存在或Token已过期')
     }
 
     return {
       code: 200,
+      message: 'success',
       data: {
         id: user.id,
         username: user.username,
@@ -93,8 +106,11 @@ export async function mockGetUserInfo(token: string) {
         avatar: user.avatar,
       },
     }
-  } catch {
-    throw new Error('无效的 Token')
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('用户不存在')) {
+      throw error
+    }
+    throw new Error('无效的 Token，请重新登录')
   }
 }
 
@@ -106,6 +122,6 @@ export async function mockLogout() {
   await delay(200)
   return {
     code: 200,
-    message: 'success',
+    message: '退出成功',
   }
 }

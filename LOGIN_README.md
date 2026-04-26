@@ -1,4 +1,4 @@
-# 登录功能使用说明
+# 登录功能说明
 
 ## 📁 项目结构
 
@@ -6,7 +6,8 @@
 src/
 ├── api/                    # API 服务层
 │   ├── request.ts         # axios 实例配置和拦截器
-│   └── auth.ts            # 认证相关 API 接口
+│   ├── auth.ts            # 认证相关 API 接口
+│   └── mock.ts            # Mock数据（开发环境）
 ├── stores/
 │   ├── user.ts            # 用户状态管理
 │   └── user.spec.ts       # 用户 Store 单元测试
@@ -31,146 +32,152 @@ npm run dev
 
 浏览器打开 `http://localhost:5173`，会自动跳转到 `/login` 登录页。
 
-### 3. 测试账号
-
-目前使用的是模拟数据，你可以使用任意用户名和密码进行登录测试。
-
-## 🔧 配置说明
-
-### API 地址配置
-
-在 `.env.development` 或 `.env.production` 中修改：
-
-```env
-VITE_API_BASE_URL=http://localhost:3000/api
-```
-
-### 后端 API 接口要求
-
-需要后端提供以下接口：
-
-#### 1. 登录接口
-- **URL**: `POST /auth/login`
-- **请求体**:
-  ```json
-  {
-    "username": "admin",
-    "password": "123456"
-  }
-  ```
-- **响应**:
-  ```json
-  {
-    "code": 200,
-    "message": "success",
-    "data": {
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "userInfo": {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@example.com",
-        "avatar": "https://..."
-      }
-    }
-  }
-  ```
-
-#### 2. 获取用户信息接口
-- **URL**: `GET /auth/userinfo`
-- **Headers**: `Authorization: Bearer <token>`
-- **响应**:
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "id": 1,
-      "username": "admin",
-      "email": "admin@example.com",
-      "avatar": "https://..."
-    }
-  }
-  ```
-
-#### 3. 登出接口
-- **URL**: `POST /auth/logout`
-- **Headers**: `Authorization: Bearer <token>`
-- **响应**:
-  ```json
-  {
-    "code": 200
-  }
-  ```
-
 ## 🎯 功能特性
 
-### ✅ 已实现功能
+### 1. 完善的表单验证
+- ✅ 用户名不能为空，且至少3个字符
+- ✅ 密码不能为空，且至少6个字符
+- ✅ 实时验证和错误提示
+- ✅ 字段级别的错误显示
 
-1. **用户登录**
-   - 表单验证
-   - Token 存储到 localStorage
-   - 自动跳转到首页
+### 2. 记住我功能
+- ✅ 勾选"记住我"后，下次访问会自动填充用户名
+- ✅ 用户名保存在本地存储中
+- ✅ 取消勾选会清除保存的用户名
 
-2. **路由守卫**
-   - 未登录用户访问受保护页面时自动跳转到登录页
-   - 已登录用户访问登录页时自动跳转到首页
-   - 支持登录后返回原访问页面
+### 3. 密码可见性切换
+- ✅ 点击眼睛图标可以显示/隐藏密码
+- ✅ 提升用户体验，方便用户确认输入
 
-3. **Token 管理**
-   - 自动在请求头添加 Authorization
-   - Token 过期自动跳转登录页
-   - 401 错误自动处理
+### 4. 友好的错误提示
+- ✅ 登录失败时显示明确的错误信息
+- ✅ 错误提示带有动画效果
+- ✅ 字段验证错误实时显示
 
-4. **用户信息显示**
-   - 首页显示当前登录用户
-   - 退出登录功能
+### 5. 加载状态优化
+- ✅ 登录过程中显示加载动画
+- ✅ 禁用表单防止重复提交
+- ✅ 按钮文字变化提示当前状态
 
-5. **错误处理**
-   - 统一的错误提示
-   - 网络错误处理
-   - 超时处理
+### 6. 智能路由跳转
+- ✅ 登录后自动跳转到之前访问的页面
+- ✅ 未登录访问受保护页面会自动重定向到登录页
+- ✅ 已登录用户访问登录页会跳转到首页
 
-### 📝 单元测试
+### 7. Token 管理
+- ✅ 自动保存和恢复登录状态
+- ✅ 应用启动时检查本地Token
+- ✅ Token失效时自动清除并跳转登录
 
-运行测试：
+## 👥 测试账号
 
-```bash
-npm run test:unit
+系统提供了以下测试账号：
+
+| 用户名 | 密码 | 说明 |
+|--------|------|------|
+| admin | 123456 | 管理员账号 |
+| user | 123456 | 普通用户 |
+| test | test123 | 测试账号 |
+
+## 📖 使用流程
+
+### 首次登录
+1. 打开应用，自动跳转到登录页面
+2. 输入用户名和密码
+3. 可选择勾选"记住我"
+4. 点击"登录"按钮
+5. 登录成功后跳转到首页
+
+### 再次访问
+- 如果勾选了"记住我"，用户名会自动填充
+- 如果Token仍然有效，可以直接访问受保护页面
+- 如果Token失效，会要求重新登录
+
+### 退出登录
+1. 在首页点击左侧边栏底部的"退出登录"按钮
+2. 系统会清除本地数据
+3. 自动跳转到登录页面
+
+## 🛠️ 技术实现
+
+### 核心文件
+- `src/views/LoginView.vue` - 登录页面组件
+- `src/stores/user.ts` - 用户状态管理
+- `src/api/auth.ts` - 认证API接口
+- `src/api/mock.ts` - Mock数据（开发环境）
+- `src/router/index.ts` - 路由配置和守卫
+
+### 状态管理
+使用 Pinia 管理用户状态：
+- `token`: 用户认证令牌
+- `userInfo`: 用户信息
+- `isLoggedIn`: 登录状态计算属性
+
+### 路由守卫
+- 全局前置守卫检查路由是否需要认证
+- 未登录用户访问受保护页面会重定向到登录页
+- 已登录用户访问登录页会重定向到首页
+
+### 数据持久化
+- Token 保存在 localStorage 中
+- "记住我"的用户名保存在 localStorage 中
+- 应用启动时自动恢复登录状态
+
+## 🔌 API 接口
+
+### 登录接口
+```typescript
+POST /auth/login
+Request: { username: string, password: string }
+Response: { 
+  code: number, 
+  message: string, 
+  data: { 
+    token: string, 
+    userInfo: UserInfo 
+  } 
+}
 ```
 
-测试覆盖：
-- 登录成功/失败场景
-- 登出功能
-- 获取用户信息
-- 状态管理逻辑
+### 获取用户信息
+```typescript
+GET /auth/userinfo
+Headers: { Authorization: Bearer <token> }
+Response: { 
+  code: number, 
+  message: string, 
+  data: UserInfo 
+}
+```
 
-## 🔐 安全建议
+### 登出接口
+```typescript
+POST /auth/logout
+Headers: { Authorization: Bearer <token> }
+Response: { 
+  code: number, 
+  message: string 
+}
+```
 
-1. **生产环境**务必使用 HTTPS
-2. Token 建议使用 JWT 格式并设置合理的过期时间
-3. 密码传输前应进行加密（如 bcrypt）
-4. 考虑添加 CSRF 保护
-5. 实现刷新 Token 机制
+## 🚀 后续优化建议
 
-## 🛠️ 扩展建议
+1. **密码强度验证** - 添加密码复杂度要求
+2. **验证码功能** - 防止暴力破解
+3. **第三方登录** - 支持微信、GitHub等
+4. **双因素认证** - 提高安全性
+5. **登录日志** - 记录登录时间和IP
+6. **自动刷新Token** - 避免频繁登录
+7. **会话超时提醒** - 提前通知用户
 
-1. **添加注册功能**
-   - 创建 `RegisterView.vue`
-   - 在 `auth.ts` 中添加注册 API
+## ⚠️ 注意事项
 
-2. **添加忘记密码功能**
-   - 创建密码重置流程
-
-3. **添加第三方登录**
-   - GitHub、Google、微信等
-
-4. **添加权限控制**
-   - 基于角色的访问控制（RBAC）
-   - 菜单权限动态加载
-
-5. **优化用户体验**
-   - 添加记住我功能
-   - 添加验证码
-   - 添加登录动画效果
+⚠️ **重要提示**：
+- 当前使用的是 Mock API，仅用于开发测试
+- 生产环境需要替换为真实的后端API
+- 密码在实际项目中应该加密传输和存储
+- Token 应该使用 JWT 等安全机制
+- 需要实现HTTPS保证传输安全
 
 ## 📚 相关文档
 
