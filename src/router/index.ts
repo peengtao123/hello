@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import AdminLayout from '../layouts/AdminLayout.vue'
 import HomeView from '../views/HomeView.vue'
 import { useUserStore } from '@/stores/user'
 
@@ -16,33 +17,60 @@ const router = createRouter({
     },
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      component: AdminLayout, // 使用统一布局组件
       meta: { 
-        requiresAuth: true,
-        title: '首页'
+        requiresAuth: true
       },
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-      meta: { 
-        requiresAuth: true,
-        title: '关于'
-      },
-    },
-    {
-      path: '/users',
-      name: 'users',
-      component: () => import('../views/UserManageView.vue'),
-      meta: { 
-        requiresAuth: true,
-        title: '用户管理'
-      },
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: HomeView,
+          meta: { 
+            title: '首页'
+          },
+        },
+        {
+          path: 'about',
+          name: 'about',
+          component: () => import('../views/AboutView.vue'),
+          meta: { 
+            title: '关于'
+          },
+        },
+        {
+          path: 'users',
+          name: 'users',
+          component: () => import('../views/UserManageView.vue'),
+          meta: { 
+            title: '用户管理'
+          },
+        },
+        {
+          path: 'products',
+          name: 'products',
+          component: () => import('../views/ProductManageView.vue'),
+          meta: { 
+            title: '商品管理'
+          },
+        },
+        {
+          path: 'orders',
+          name: 'orders',
+          component: () => import('../views/OrderManageView.vue'),
+          meta: { 
+            title: '订单管理'
+          },
+        },
+        {
+          path: 'settings',
+          name: 'settings',
+          component: () => import('../views/SystemSettingsView.vue'),
+          meta: { 
+            title: '系统设置'
+          },
+        },
+      ]
     },
   ],
 })

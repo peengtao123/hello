@@ -1,160 +1,167 @@
 <template>
   <div class="page-content">
-          <div class="page-header">
-            <h1>用户管理</h1>
-            <p class="page-description">管理系统用户信息，包括新增、编辑、删除等操作</p>
-          </div>
+    <div class="page-header">
+      <h1>商品管理</h1>
+      <p class="page-description">管理系统商品信息，包括新增、编辑、删除等操作</p>
+    </div>
 
-          <!-- 操作按钮 -->
-          <div class="action-bar">
-            <button class="btn btn-primary" @click="showCreateModal">
-              <span class="icon">+</span> 新增用户
-            </button>
-          </div>
+    <!-- 操作按钮 -->
+    <div class="action-bar">
+      <button class="btn btn-primary" @click="showCreateModal">
+        <span class="icon">+</span> 新增商品
+      </button>
+    </div>
 
-          <!-- 搜索和筛选区域 -->
-          <div class="search-bar">
-            <input
-              v-model="searchParams.username"
-              type="text"
-              placeholder="搜索用户名"
-              class="search-input"
-              @keyup.enter="handleSearch"
-            />
-            <select v-model="searchParams.status" class="status-select" @change="handleSearch">
-              <option :value="undefined">全部状态</option>
-              <option :value="1">启用</option>
-              <option :value="0">禁用</option>
-            </select>
-            <button class="btn btn-secondary" @click="handleSearch">搜索</button>
-            <button class="btn btn-outline" @click="resetSearch">重置</button>
-          </div>
+    <!-- 搜索和筛选区域 -->
+    <div class="search-bar">
+      <input
+        v-model="searchParams.name"
+        type="text"
+        placeholder="搜索商品名称"
+        class="search-input"
+        @keyup.enter="handleSearch"
+      />
+      <select v-model="searchParams.category" class="category-select" @change="handleSearch">
+        <option :value="undefined">全部分类</option>
+        <option value="电子产品">电子产品</option>
+        <option value="服装">服装</option>
+        <option value="食品">食品</option>
+        <option value="家居">家居</option>
+      </select>
+      <button class="btn btn-secondary" @click="handleSearch">搜索</button>
+      <button class="btn btn-outline" @click="resetSearch">重置</button>
+    </div>
 
-          <!-- 用户列表表格 -->
-          <div class="table-container">
-            <table class="user-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>头像</th>
-                  <th>用户名</th>
-                  <th>邮箱</th>
-                  <th>角色</th>
-                  <th>状态</th>
-                  <th>创建时间</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="loading" class="loading-row">
-                  <td colspan="8">
-                    <div class="loading-spinner"></div>
-                    <span>加载中...</span>
-                  </td>
-                </tr>
-                <tr v-else-if="userList.length === 0">
-                  <td colspan="8" class="empty-state">暂无数据</td>
-                </tr>
-                <tr v-for="user in userList" :key="user.id">
-                  <td>{{ user.id }}</td>
-                  <td>
-                    <img :src="user.avatar" :alt="user.username" class="avatar" />
-                  </td>
-                  <td>{{ user.username }}</td>
-                  <td>{{ user.email || '-' }}</td>
-                  <td>{{ user.role }}</td>
-                  <td>
-                    <span :class="['status-badge', user.status === 1 ? 'status-active' : 'status-inactive']">
-                      {{ user.status === 1 ? '启用' : '禁用' }}
-                    </span>
-                  </td>
-                  <td>{{ user.createTime }}</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn btn-sm btn-edit" @click="showEditModal(user)">编辑</button>
-                      <button class="btn btn-sm btn-reset" @click="handleResetPassword(user)">重置密码</button>
-                      <button class="btn btn-sm btn-delete" @click="handleDelete(user)">删除</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+    <!-- 商品列表表格 -->
+    <div class="table-container">
+      <table class="product-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>商品图片</th>
+            <th>商品名称</th>
+            <th>分类</th>
+            <th>价格</th>
+            <th>库存</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="loading" class="loading-row">
+            <td colspan="8">
+              <div class="loading-spinner"></div>
+              <span>加载中...</span>
+            </td>
+          </tr>
+          <tr v-else-if="productList.length === 0">
+            <td colspan="8" class="empty-state">暂无数据</td>
+          </tr>
+          <tr v-for="product in productList" :key="product.id">
+            <td>{{ product.id }}</td>
+            <td>
+              <img :src="product.image" :alt="product.name" class="product-image" />
+            </td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.category }}</td>
+            <td>¥{{ product.price.toFixed(2) }}</td>
+            <td>{{ product.stock }}</td>
+            <td>
+              <span :class="['status-badge', product.status === 1 ? 'status-active' : 'status-inactive']">
+                {{ product.status === 1 ? '上架' : '下架' }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-sm btn-edit" @click="showEditModal(product)">编辑</button>
+                <button class="btn btn-sm btn-delete" @click="handleDelete(product)">删除</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-          <!-- 分页 -->
-          <div class="pagination" v-if="total > 0">
-            <button 
-              class="btn btn-page" 
-              :disabled="currentPage === 1" 
-              @click="handlePageChange(currentPage - 1)"
-            >
-              上一页
-            </button>
-            <span class="page-info">第 {{ currentPage }} / {{ totalPages }} 页，共 {{ total }} 条</span>
-            <button 
-              class="btn btn-page" 
-              :disabled="currentPage === totalPages" 
-              @click="handlePageChange(currentPage + 1)"
-            >
-              下一页
-            </button>
-          </div>
-    <!-- 创建/编辑用户模态框 -->
+    <!-- 分页 -->
+    <div class="pagination" v-if="total > 0">
+      <button 
+        class="btn btn-page" 
+        :disabled="currentPage === 1" 
+        @click="handlePageChange(currentPage - 1)"
+      >
+        上一页
+      </button>
+      <span class="page-info">第 {{ currentPage }} / {{ totalPages }} 页，共 {{ total }} 条</span>
+      <button 
+        class="btn btn-page" 
+        :disabled="currentPage === totalPages" 
+        @click="handlePageChange(currentPage + 1)"
+      >
+        下一页
+      </button>
+    </div>
+
+    <!-- 创建/编辑商品模态框 -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <div class="modal-header">
-          <h2>{{ isEditing ? '编辑用户' : '新增用户' }}</h2>
+          <h2>{{ isEditing ? '编辑商品' : '新增商品' }}</h2>
           <button class="close-btn" @click="closeModal">×</button>
         </div>
         <div class="modal-body">
           <form @submit.prevent="handleSubmit">
             <div class="form-group">
-              <label for="username">用户名 <span class="required">*</span></label>
+              <label for="name">商品名称 <span class="required">*</span></label>
               <input
-                id="username"
-                v-model="formData.username"
+                id="name"
+                v-model="formData.name"
                 type="text"
-                :disabled="isEditing"
-                placeholder="请输入用户名"
+                placeholder="请输入商品名称"
                 required
               />
             </div>
             
-            <div class="form-group" v-if="!isEditing">
-              <label for="password">密码 <span class="required">*</span></label>
+            <div class="form-group">
+              <label for="category">分类 <span class="required">*</span></label>
+              <select id="category" v-model="formData.category" required>
+                <option value="">请选择分类</option>
+                <option value="电子产品">电子产品</option>
+                <option value="服装">服装</option>
+                <option value="食品">食品</option>
+                <option value="家居">家居</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="price">价格 <span class="required">*</span></label>
               <input
-                id="password"
-                v-model="formData.password"
-                type="password"
-                placeholder="请输入密码"
+                id="price"
+                v-model.number="formData.price"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="请输入价格"
                 required
               />
             </div>
 
             <div class="form-group">
-              <label for="email">邮箱</label>
+              <label for="stock">库存 <span class="required">*</span></label>
               <input
-                id="email"
-                v-model="formData.email"
-                type="email"
-                placeholder="请输入邮箱"
+                id="stock"
+                v-model.number="formData.stock"
+                type="number"
+                min="0"
+                placeholder="请输入库存数量"
+                required
               />
-            </div>
-
-            <div class="form-group">
-              <label for="role">角色</label>
-              <select id="role" v-model="formData.role">
-                <option value="普通用户">普通用户</option>
-                <option value="管理员">管理员</option>
-                <option value="测试用户">测试用户</option>
-              </select>
             </div>
 
             <div class="form-group">
               <label for="status">状态</label>
               <select id="status" v-model="formData.status">
-                <option :value="1">启用</option>
-                <option :value="0">禁用</option>
+                <option :value="1">上架</option>
+                <option :value="0">下架</option>
               </select>
             </div>
 
@@ -178,33 +185,50 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getUserList, createUser, updateUser, deleteUser, resetPassword } from '@/api/user'
-import type { User, CreateUserParams, UpdateUserParams } from '@/api/user'
+
+// 商品接口定义
+interface Product {
+  id: number
+  name: string
+  category: string
+  price: number
+  stock: number
+  status: number
+  image: string
+}
+
+interface CreateProductParams {
+  name: string
+  category: string
+  price: number
+  stock: number
+  status: number
+}
 
 // 状态管理
 const loading = ref(false)
 const submitting = ref(false)
 const showModal = ref(false)
 const isEditing = ref(false)
-const currentUser = ref<User | null>(null)
-const userList = ref<User[]>([])
+const currentProduct = ref<Product | null>(null)
+const productList = ref<Product[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
 const searchParams = ref<{
-  username?: string
-  status?: number
+  name?: string
+  category?: string
 }>({
-  username: '',
-  status: undefined,
+  name: '',
+  category: undefined,
 })
 
-const formData = ref<CreateUserParams & { id?: number }>({
-  username: '',
-  password: '',
-  email: '',
-  role: '普通用户',
+const formData = ref<CreateProductParams & { id?: number }>({
+  name: '',
+  category: '',
+  price: 0,
+  stock: 0,
   status: 1,
 })
 
@@ -225,23 +249,26 @@ function showMessage(text: string, type: 'success' | 'error' = 'success') {
   }, 3000)
 }
 
-// 获取用户列表
-async function fetchUserList() {
+// 模拟获取商品列表
+async function fetchProductList() {
   loading.value = true
   try {
-    const response = await getUserList({
-      page: currentPage.value,
-      pageSize: pageSize.value,
-      username: searchParams.value.username,
-      status: searchParams.value.status,
-    })
+    // 模拟API调用延迟
+    await new Promise(resolve => setTimeout(resolve, 500))
     
-    if (response.data) {
-      userList.value = response.data.list
-      total.value = response.data.total
-    }
+    // 模拟数据
+    const mockData: Product[] = [
+      { id: 1, name: 'iPhone 15 Pro', category: '电子产品', price: 7999, stock: 100, status: 1, image: 'https://via.placeholder.com/40' },
+      { id: 2, name: 'MacBook Pro', category: '电子产品', price: 14999, stock: 50, status: 1, image: 'https://via.placeholder.com/40' },
+      { id: 3, name: 'Nike运动鞋', category: '服装', price: 899, stock: 200, status: 1, image: 'https://via.placeholder.com/40' },
+      { id: 4, name: '有机大米', category: '食品', price: 68, stock: 500, status: 1, image: 'https://via.placeholder.com/40' },
+      { id: 5, name: '沙发套装', category: '家居', price: 3999, stock: 30, status: 0, image: 'https://via.placeholder.com/40' },
+    ]
+    
+    productList.value = mockData
+    total.value = mockData.length
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : '获取用户列表失败'
+    const errorMessage = error instanceof Error ? error.message : '获取商品列表失败'
     showMessage(errorMessage, 'error')
   } finally {
     loading.value = false
@@ -251,52 +278,52 @@ async function fetchUserList() {
 // 搜索
 function handleSearch() {
   currentPage.value = 1
-  fetchUserList()
+  fetchProductList()
 }
 
 // 重置搜索
 function resetSearch() {
   searchParams.value = {
-    username: '',
-    status: undefined,
+    name: '',
+    category: undefined,
   }
   currentPage.value = 1
-  fetchUserList()
+  fetchProductList()
 }
 
 // 分页切换
 function handlePageChange(page: number) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
-    fetchUserList()
+    fetchProductList()
   }
 }
 
 // 显示创建模态框
 function showCreateModal() {
   isEditing.value = false
-  currentUser.value = null
+  currentProduct.value = null
   formData.value = {
-    username: '',
-    password: '',
-    email: '',
-    role: '普通用户',
+    name: '',
+    category: '',
+    price: 0,
+    stock: 0,
     status: 1,
   }
   showModal.value = true
 }
 
 // 显示编辑模态框
-function showEditModal(user: User) {
+function showEditModal(product: Product) {
   isEditing.value = true
-  currentUser.value = user
+  currentProduct.value = product
   formData.value = {
-    id: user.id,
-    username: user.username,
-    password: '', // 编辑时不需要密码
-    email: user.email || '',
-    role: user.role,
-    status: user.status,
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    price: product.price,
+    stock: product.stock,
+    status: product.status,
   }
   showModal.value = true
 }
@@ -304,47 +331,34 @@ function showEditModal(user: User) {
 // 关闭模态框
 function closeModal() {
   showModal.value = false
-  currentUser.value = null
+  currentProduct.value = null
 }
 
 // 提交表单
 async function handleSubmit() {
-  if (!formData.value.username) {
-    showMessage('请输入用户名', 'error')
+  if (!formData.value.name) {
+    showMessage('请输入商品名称', 'error')
     return
   }
 
-  if (!isEditing.value && !formData.value.password) {
-    showMessage('请输入密码', 'error')
+  if (!formData.value.category) {
+    showMessage('请选择分类', 'error')
     return
   }
 
   submitting.value = true
   try {
-    if (isEditing.value && currentUser.value) {
-      // 更新用户
-      const updateData: UpdateUserParams = {
-        email: formData.value.email,
-        role: formData.value.role,
-        status: formData.value.status,
-      }
-      await updateUser(currentUser.value.id, updateData)
-      showMessage('用户更新成功')
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    if (isEditing.value && currentProduct.value) {
+      showMessage('商品更新成功')
     } else {
-      // 创建用户
-      const createData: CreateUserParams = {
-        username: formData.value.username,
-        password: formData.value.password,
-        email: formData.value.email,
-        role: formData.value.role,
-        status: formData.value.status,
-      }
-      await createUser(createData)
-      showMessage('用户创建成功')
+      showMessage('商品创建成功')
     }
     
     closeModal()
-    fetchUserList()
+    fetchProductList()
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : '操作失败'
     showMessage(errorMessage, 'error')
@@ -353,42 +367,26 @@ async function handleSubmit() {
   }
 }
 
-// 删除用户
-async function handleDelete(user: User) {
-  if (!confirm(`确定要删除用户 "${user.username}" 吗？`)) {
+// 删除商品
+async function handleDelete(product: Product) {
+  if (!confirm(`确定要删除商品 "${product.name}" 吗？`)) {
     return
   }
 
   try {
-    await deleteUser(user.id)
-    showMessage('用户删除成功')
-    fetchUserList()
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 500))
+    showMessage('商品删除成功')
+    fetchProductList()
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : '删除失败'
     showMessage(errorMessage, 'error')
   }
 }
 
-// 重置密码
-async function handleResetPassword(user: User) {
-  if (!confirm(`确定要重置用户 "${user.username}" 的密码吗？`)) {
-    return
-  }
-
-  try {
-    const response = await resetPassword(user.id)
-    if (response.data) {
-      showMessage(`密码已重置为: ${response.data.password}`)
-    }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : '重置密码失败'
-    showMessage(errorMessage, 'error')
-  }
-}
-
 // 初始化
 onMounted(() => {
-  fetchUserList()
+  fetchProductList()
 })
 </script>
 
@@ -398,7 +396,7 @@ onMounted(() => {
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  width: 100%;
+  min-height: calc(100vh - 180px);
 }
 
 .page-header {
@@ -442,7 +440,7 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.status-select {
+.category-select {
   padding: 8px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -458,16 +456,16 @@ onMounted(() => {
   overflow-x: auto;
 }
 
-.user-table {
+.product-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.user-table thead {
+.product-table thead {
   background: #f9fafb;
 }
 
-.user-table th {
+.product-table th {
   padding: 12px 16px;
   text-align: left;
   font-weight: 600;
@@ -476,21 +474,21 @@ onMounted(() => {
   border-bottom: 2px solid #e5e7eb;
 }
 
-.user-table td {
+.product-table td {
   padding: 12px 16px;
   border-bottom: 1px solid #e5e7eb;
   font-size: 14px;
   color: #6b7280;
 }
 
-.user-table tbody tr:hover {
+.product-table tbody tr:hover {
   background: #f9fafb;
 }
 
-.avatar {
+.product-image {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 6px;
   object-fit: cover;
 }
 
@@ -587,15 +585,6 @@ onMounted(() => {
 
 .btn-edit:hover {
   background: #bfdbfe;
-}
-
-.btn-reset {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.btn-reset:hover {
-  background: #fde68a;
 }
 
 .btn-delete {
@@ -761,11 +750,6 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.form-group input:disabled {
-  background: #f3f4f6;
-  cursor: not-allowed;
-}
-
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -806,13 +790,14 @@ onMounted(() => {
   }
 }
 
+/* 响应式设计 */
 @media (max-width: 768px) {
-  .page-content {
-    padding: 20px;
-  }
-  
   .search-bar {
     flex-direction: column;
+  }
+  
+  .page-content {
+    padding: 20px;
   }
 }
 </style>

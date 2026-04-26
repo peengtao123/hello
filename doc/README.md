@@ -9,7 +9,7 @@
 
 一个基于 Vue 3 + TypeScript + Vite 的现代化管理后台系统模板
 
-[快速开始](./doc/QUICK_START.md) • [功能特性](#-功能特性) • [完整文档](#-文档) • [在线演示](#-在线演示)
+[快速开始](#-快速开始) • [功能特性](#-功能特性) • [技术文档](#-文档) • [在线演示](#-在线演示)
 
 </div>
 
@@ -99,14 +99,41 @@ npm run test:e2e
 
 ## 📖 文档
 
-所有详细文档已移至 [`doc/`](./doc/) 目录：
-
 | 文档 | 说明 |
 |------|------|
-| [📘 快速开始指南](./doc/QUICK_START.md) | 5分钟上手教程 |
-| [📗 技术文档](./doc/TECHNICAL_DOCUMENTATION.md) | 完整的技术架构和功能说明 |
-| [📙 主题使用指南](./doc/THEME_GUIDE.md) | 主题系统详细使用说明 |
-| [📕 API 接口文档](./doc/API_DOCUMENTATION.md) | 后端 API 接口定义 |
+| [快速开始指南](./QUICK_START.md) | 5分钟上手教程 |
+| [技术文档](./TECHNICAL_DOCUMENTATION.md) | 完整的技术架构和功能说明 |
+| [主题使用指南](./THEME_GUIDE.md) | 主题系统详细使用说明 |
+| [API 接口文档](./API_DOCUMENTATION.md) | 后端 API 接口定义 |
+
+---
+
+## 🎯 核心功能演示
+
+### 1. 登录与验证
+
+![登录页面](./screenshots/login.png)
+
+- 表单实时验证
+- 滑块验证码（3次失败后强制验证）
+- Token 自动保存和恢复
+
+### 2. 主题定制
+
+![主题设置](./screenshots/theme.png)
+
+- 8种预设主题一键切换
+- 自定义颜色选择器
+- 主题导入/导出
+- 自动切换时间表设置
+
+### 3. 管理后台
+
+![仪表盘](./screenshots/dashboard.png)
+
+- 统一的侧边栏菜单
+- 顶部导航和面包屑
+- 页面缓存保持状态
 
 ---
 
@@ -125,6 +152,64 @@ npm run test:e2e
 
 ---
 
+## 📁 项目结构
+
+```
+hello/
+├── src/
+│   ├── api/                 # API 接口层
+│   │   ├── auth.ts         # 认证接口
+│   │   └── mock.ts         # Mock 数据
+│   ├── assets/              # 静态资源
+│   │   ├── main.css        # 全局样式
+│   │   └── theme.css       # 主题变量
+│   ├── components/          # 公共组件
+│   │   └── SliderCaptcha.vue # 滑块验证码
+│   ├── layouts/             # 布局组件
+│   │   └── AdminLayout.vue # 统一布局
+│   ├── router/              # 路由配置
+│   │   └── index.ts        # 路由定义
+│   ├── stores/              # 状态管理
+│   │   ├── user.ts         # 用户状态
+│   │   └── theme.ts        # 主题状态
+│   ├── views/               # 页面视图
+│   │   ├── HomeView.vue    # 首页
+│   │   ├── LoginView.vue   # 登录页
+│   │   ├── UserManageView.vue # 用户管理
+│   │   ├── ProductManageView.vue # 商品管理
+│   │   ├── OrderManageView.vue # 订单管理
+│   │   └── SystemSettingsView.vue # 系统设置
+│   ├── App.vue              # 根组件
+│   └── main.ts              # 入口文件
+├── tests/                   # 测试文件
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+└── README.md
+```
+
+---
+
+## 🔧 常用命令
+
+```bash
+# 开发
+npm run dev              # 启动开发服务器
+npm run build            # 生产构建
+npm run preview          # 预览构建
+
+# 测试
+npm run test:unit        # 单元测试
+npm run test:e2e         # E2E 测试
+
+# 代码质量
+npm run lint             # 代码检查
+npm run format           # 代码格式化
+npm run type-check       # 类型检查
+```
+
+---
+
 ## 🧪 测试账号
 
 | 用户名 | 密码 | 角色 |
@@ -132,6 +217,22 @@ npm run test:e2e
 | admin | 123456 | 管理员 |
 | user | 123456 | 普通用户 |
 | test | test123 | 测试账号 |
+
+---
+
+## 📸 截图展示
+
+### 登录页面
+![登录页面](./screenshots/login.png)
+
+### 仪表盘
+![仪表盘](./screenshots/dashboard.png)
+
+### 主题设置
+![主题设置](./screenshots/theme-settings.png)
+
+### 用户管理
+![用户管理](./screenshots/users.png)
 
 ---
 
